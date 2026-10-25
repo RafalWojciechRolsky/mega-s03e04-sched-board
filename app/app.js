@@ -4,8 +4,10 @@ const POLL_MS = 2000;
 const list = document.querySelector('[data-testid="incident-list"]');
 const loader = document.querySelector('[data-testid="loader"]');
 const empty = document.querySelector('[data-testid="empty"]');
+const newBar = document.querySelector('[data-testid="new-bar"]');
 
 const seen = new Map();
+const pending = new Map();
 const acked = new Set();
 const timeFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'medium' });
 
@@ -32,6 +34,19 @@ function render() {
     .join('');
 }
 
+function updateBar() {
+  const n = pending.size;
+  newBar.hidden = n === 0;
+  if (n) newBar.textContent = `${n} new`;
+}
+
+newBar.addEventListener('click', () => {
+  for (const [id, i] of pending) seen.set(id, i);
+  pending.clear();
+  updateBar();
+  render();
+});
+
 list.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-testid="ack"]');
   if (!btn) return;
@@ -49,9 +64,14 @@ list.addEventListener('click', async (e) => {
 async function poll() {
   try {
     const page = await fetchIncidents();
-    for (const i of page.incidents) seen.set(i.id, i);
-    loader.hidden = true;
-    render();
+    if (seen.size === 0 && pending.size === 0) {
+      for (const i of page.incidents) seen.set(i.id, i);
+      loader.hidden = true;
+      render();
+    } else {
+      for (const i of page.incidents) if (!seen.has(i.id)) pending.set(i.id, i);
+    }
+    updateBar();
   } catch (err) {
     console.error('poll failed', err);
   }

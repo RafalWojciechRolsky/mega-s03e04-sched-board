@@ -13,7 +13,9 @@ what just broke and takes it.
 
 ## Requirements
 
-- **R1** New incidents appear live at the top of the list, newest first.
+- **R1** New incidents do not shift the list under the viewer: they queue behind a "N new" bar
+  (`data-testid="new-bar"`) that shows the count; clicking it merges them in at the top, newest first.
+  (product's decision, 2026-10-25, after the ack-race proof: the list holds still while on screen)
 - **R2** Each incident row has an **Ack** button. Ack sends the ack (`api.ack(id)`) and marks the row acked.
 - **R3** Show a loader until incidents load.
 - **R4** The board refreshes itself every 2 seconds while open.
@@ -31,6 +33,7 @@ what just broke and takes it.
 | `incident-row` | one incident row, with `data-id="<incident id>"` |
 | `ack` | the Ack button in a row |
 | `acked` | the acked mark in a row |
+| `new-bar` | the "N new" bar that merges queued incidents on click |
 | `build-sha` | the sha in the footer |
 
 ## Done
