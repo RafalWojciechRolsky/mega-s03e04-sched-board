@@ -7,6 +7,7 @@ const empty = document.querySelector('[data-testid="empty"]');
 const newBar = document.querySelector('[data-testid="new-bar"]');
 
 const seen = new Map();
+const order = [];
 const pending = new Map();
 const acked = new Set();
 const timeFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'medium' });
@@ -15,7 +16,7 @@ const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function render() {
-  const incidents = [...seen.values()].sort((a, b) => Date.parse(b.openedAt) - Date.parse(a.openedAt));
+  const incidents = order.map((id) => seen.get(id)).filter(Boolean);
   empty.hidden = incidents.length > 0;
   list.innerHTML = incidents
     .map(
@@ -36,12 +37,13 @@ function render() {
 
 function updateBar() {
   const n = pending.size;
-  newBar.hidden = n === 0;
+  newBar.classList.toggle('show', n > 0);
   if (n) newBar.textContent = `${n} new`;
 }
 
 newBar.addEventListener('click', () => {
   for (const [id, i] of pending) seen.set(id, i);
+  order.unshift(...pending.keys());
   pending.clear();
   updateBar();
   render();
@@ -65,7 +67,10 @@ async function poll() {
   try {
     const page = await fetchIncidents();
     if (seen.size === 0 && pending.size === 0) {
-      for (const i of page.incidents) seen.set(i.id, i);
+      for (const i of page.incidents) {
+        seen.set(i.id, i);
+        order.push(i.id);
+      }
       loader.hidden = true;
       render();
     } else {
